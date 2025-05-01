@@ -49,7 +49,7 @@ const ProfileScreen = () => {
     const handlePostPress = (post) => {
         const postWithProfilePic = { ...post, profilePictureUrl: profileData.profilePictureUrl };
         router.push({
-            pathname: '/subPages/PostViewScreen',
+            pathname: '/subPages/PostScreen',
             params: { post: JSON.stringify(postWithProfilePic) },
         });
     };
@@ -69,7 +69,8 @@ const ProfileScreen = () => {
         },
         onEnd: (event) => {
             if (event.translationY > 100) {
-                runOnJS(router.push)('../subPages/Profile2ndview');
+                console.log('Navigating to /subPages2/Profile2ndView');
+                runOnJS(router.push)('/subPages2/Profile2ndView');
             }
             translateY.value = withSpring(0);
             rotate.value = withTiming(0, { duration: 300 });

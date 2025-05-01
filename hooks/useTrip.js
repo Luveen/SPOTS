@@ -23,5 +23,5 @@ export const useTrip = () => {
         }));
     };
 
-    return { tripData, updateTripData, addStop };
+    return { tripData, setTripData, updateTripData, addStop  };
 };

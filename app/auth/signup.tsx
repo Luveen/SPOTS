@@ -183,7 +183,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: width * 0.1, // Uses 10% of screen width for horizontal padding
     alignItems: 'center',
     justifyContent: 'center',
-    // Removed paddingBottom: 100 to allow content to adjust naturally
   },
   signupHeader: {
     fontSize: width * 0.08, // Uses 8% of screen width for a larger header font size

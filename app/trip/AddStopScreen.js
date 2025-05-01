@@ -1,30 +1,34 @@
+
 import {
-    FontAwesome5,
-    Ionicons,
-    MaterialCommunityIcons,
+  FontAwesome5,
+  Ionicons,
+  MaterialCommunityIcons,
 } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import * as Location from "expo-location";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { doc, GeoPoint, getDoc, updateDoc } from "firebase/firestore";
+import { collection,getDoc, addDoc, doc, updateDoc, GeoPoint, serverTimestamp } from "firebase/firestore";
 import { getDownloadURL, ref, uploadBytes } from "firebase/storage";
 import React, { useEffect, useState } from "react";
 import {
-    ActivityIndicator,
-    Alert,
-    Dimensions,
-    FlatList,
-    Image,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Alert,
+  Dimensions,
+  Image,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+  Switch,
+  ScrollView, // Changed from FlatList
+  FlatList, // Still use for suggestions if needed, but keep its container tight
 } from "react-native";
 import { auth, db, storage } from "../../firebaseConfig";
 
-const { width } = Dimensions.get("window");
+import { useTrip } from '../../hooks/useTrip';
+
+const { width, height } = Dimensions.get("window"); // Get height as well
 
 // Haversine formula to calculate distance between two lat/lng points
 const haversine = (coords1, coords2) => {
@@ -58,9 +62,7 @@ const categories = [
 
 // Placeholder for Google Places API logic
 const getPlaceSuggestions = async (query) => {
-  // This is a placeholder. You'll need to replace this with your actual API call.
-  // Example: Using the Google Places Autocomplete API
-  const GOOGLE_PLACES_API_KEY = "AIzaSyB8PNvLpjKD6cKLCFWAGyTd8D7jhE0O51o";
+  const GOOGLE_PLACES_API_KEY = "AIzaSyB8PNvLpjKD6cKLCFWAGyTd8D7jhE0O51o"; // Make sure this is valid
   const apiUrl = `https://maps.googleapis.com/maps/api/place/autocomplete/json?key=${GOOGLE_PLACES_API_KEY}&input=${encodeURIComponent(
     query
   )}`;
@@ -73,6 +75,9 @@ const getPlaceSuggestions = async (query) => {
         id: prediction.place_id,
         description: prediction.description,
       }));
+    } else if (data.status === "REQUEST_DENIED") {
+        console.error("Google Places API error: REQUEST_DENIED. Check your API key and restrictions in Google Cloud Console.");
+        // Optionally, show an alert to the user or log this more prominently
     }
     return [];
   } catch (error) {
@@ -86,15 +91,21 @@ export default function AddStopScreen() {
   const params = useLocalSearchParams();
   const { tripId } = params;
 
-  const [tripData, setTripData] = useState(null);
-  const [stopName, setStopName] = useState("");
+  
+ 
   const [locationName, setLocationName] = useState("");
-  const [suggestions, setSuggestions] = useState([]); // New state for suggestions
+  const [suggestions, setSuggestions] = useState([]);
   const [selectedCategories, setSelectedCategories] = useState([]);
   const [description, setDescription] = useState("");
   const [imageUri, setImageUri] = useState(null);
   const [loadingLocation, setLoadingLocation] = useState(false);
   const [isAddingStop, setIsAddingStop] = useState(false);
+  const [showSuggestions, setShowSuggestions] = useState(false); // To control suggestion visibility
+
+  const [stopName, setStopName] = useState('');
+  const [showOnMap, setShowOnMap] = useState(false); // <--- New state for this stop
+
+  const { tripData, setTripData, updateTripData, addStop } = useTrip();
 
   useEffect(() => {
     const fetchTripData = async () => {
@@ -159,6 +170,8 @@ export default function AddStopScreen() {
           `${location.coords.latitude}, ${location.coords.longitude}`
         );
       }
+      setSuggestions([]); // Clear suggestions after setting current location
+      setShowSuggestions(false);
     } catch (error) {
       console.error("Error getting location: ", error);
       Alert.alert(
@@ -170,21 +183,22 @@ export default function AddStopScreen() {
     }
   };
 
-  // New handler to fetch and display suggestions
   const handleLocationChange = async (text) => {
     setLocationName(text);
     if (text.length > 2) {
       const places = await getPlaceSuggestions(text);
       setSuggestions(places);
+      setShowSuggestions(true);
     } else {
       setSuggestions([]);
+      setShowSuggestions(false);
     }
   };
 
-  // New handler to select a suggestion
   const handleSelectSuggestion = (suggestion) => {
     setLocationName(suggestion.description);
     setSuggestions([]); // Clear suggestions
+    setShowSuggestions(false);
   };
 
   const pickImage = async () => {
@@ -192,7 +206,7 @@ export default function AddStopScreen() {
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
       aspect: [4, 3],
-      quality: 1,
+      quality: 0.7, // Lower quality for faster upload and less data usage
     });
 
     if (!result.canceled) {
@@ -225,106 +239,143 @@ export default function AddStopScreen() {
 
   const handleAddStop = async () => {
     if (!tripData) {
-      Alert.alert(
-        "Loading Trip Data",
-        "Trip data is still being loaded. Please wait a moment."
-      );
-      return;
+        Alert.alert(
+            "Loading Trip Data",
+            "Trip data is still being loaded. Please wait a moment."
+        );
+        return;
     }
 
     if (
-      !stopName.trim() ||
-      !locationName.trim() ||
-      !imageUri ||
-      selectedCategories.length === 0
+        !stopName.trim() ||
+        !locationName.trim() ||
+        !imageUri ||
+        selectedCategories.length === 0
     ) {
-      Alert.alert(
-        "Incomplete Information",
-        "Please fill in all the required information."
-      );
-      return;
+        Alert.alert(
+            "Incomplete Information",
+            "Please fill in all the required information."
+        );
+        return;
     }
 
     setIsAddingStop(true);
 
     try {
-      const geoResult = await Location.geocodeAsync(locationName);
-      if (!geoResult || geoResult.length === 0) {
-        Alert.alert(
-          "Invalid Location",
-          "Could not find a valid location. Please try a different name."
-        );
-        setIsAddingStop(false);
-        return;
-      }
+        // Use Location.geocodeAsync directly as react-native-geocoding isn't explicitly imported
+        // Ensure you have `import * as Location from 'expo-location';` at the top
+        const geoResult = await Location.geocodeAsync(locationName);
+        if (!geoResult || geoResult.length === 0) {
+            Alert.alert(
+                "Invalid Location",
+                "Could not find a valid location. Please try a different name."
+            );
+            setIsAddingStop(false);
+            return;
+        }
 
-      const { latitude, longitude } = geoResult[0];
-      const stopGeo = new GeoPoint(latitude, longitude);
+        const { latitude, longitude } = geoResult[0];
+        const stopGeo = new GeoPoint(latitude, longitude);
 
-      let lastLocationGeo;
-      if (tripData.stops && tripData.stops.length > 0) {
-        const lastStop = tripData.stops[tripData.stops.length - 1];
-        lastLocationGeo = [
-          lastStop.location.geo.latitude,
-          lastStop.location.geo.longitude,
-        ];
-      } else if (tripData.startLocation && tripData.startLocation.geo) {
-        lastLocationGeo = [
-          tripData.startLocation.geo.latitude,
-          tripData.startLocation.geo.longitude,
-        ];
-      } else {
-        Alert.alert(
-          "Missing Start Location",
-          "The trip's starting location is missing. Please go back and set it."
-        );
-        router.push("./TripDetailsScreen");
-        setIsAddingStop(false);
-        return;
-      }
+        let lastLocationGeo;
+        // The tripData.stops here refers to the in-memory state or the initial loaded state.
+        // It's more reliable to read the 'stops' subcollection directly if you need to be sure.
+        // For calculation, using the passed tripData is fine if it's kept up-to-date.
+        if (tripData.stops && tripData.stops.length > 0) {
+            const lastStop = tripData.stops[tripData.stops.length - 1];
+            lastLocationGeo = [
+                lastStop.location.geo.latitude,
+                lastStop.location.geo.longitude,
+            ];
+        } else if (tripData.startLocation && tripData.startLocation.geo) {
+            lastLocationGeo = [
+                tripData.startLocation.geo.latitude,
+                tripData.startLocation.geo.longitude,
+            ];
+        } else {
+            Alert.alert(
+                "Missing Start Location",
+                "The trip's starting location is missing. Please go back and set it."
+            );
+            router.push("./TripDetailsScreen"); // Navigate back to set start location
+            setIsAddingStop(false);
+            return;
+        }
 
-      const distance = haversine(lastLocationGeo, [
-        stopGeo.latitude,
-        stopGeo.longitude,
-      ]);
-      const totalKm = (tripData.totalKm || 0) + distance;
+        const distance = haversine(lastLocationGeo, [
+            stopGeo.latitude,
+            stopGeo.longitude,
+        ]);
+        const totalKm = (tripData.totalKm || 0) + distance;
 
-      const photoUrl = await uploadImage(imageUri);
+        const photoUrl = await uploadImage(imageUri); // Assuming uploadImage function exists and works
 
-      const newStop = {
-        stopName,
-        location: { name: locationName, geo: stopGeo },
-        photos: [photoUrl],
-        categories: selectedCategories,
-        description,
-        timestamp: new Date().toISOString(),
-      };
+        // Create the new stop object, including showOnMap
+        const newStop = {
+            stopName,
+            location: { name: locationName, geo: stopGeo },
+            photos: [photoUrl],
+            categories: selectedCategories,
+            description,
+            timestamp: serverTimestamp(), // Use serverTimestamp for Firestore
+            showOnMap: showOnMap,       // <--- HERE: Include the state of the toggle
+            createdBy: auth.currentUser.uid, // <--- Correct field for the user who created the stop
+        };
 
-      const updatedStops = [...(tripData.stops || []), newStop];
+        // Add the new stop document to the 'stops' subcollection
+        // IMPORTANT: The tripId comes from useLocalSearchParams or a parent state
+        await addDoc(collection(db, "tripDiaries", tripId, "stops"), newStop); // <--- Use newStop here, not stopDataToSave
 
-      const tripDocRef = doc(db, "tripDiaries", tripId);
-      await updateDoc(tripDocRef, {
-        stops: updatedStops,
-        totalKm: totalKm,
-      });
+        // Update the main trip document's totalKm field.
+        // We are no longer storing 'stops' as an array directly on the trip document
+        // because we are managing them as a subcollection.
+        const tripDocRef = doc(db, "tripDiaries", tripId);
+        await updateDoc(tripDocRef, {
+            totalKm: totalKm,
+            // You might want to update a lastUpdated field or similar here
+            updatedAt: serverTimestamp(),
+        });
 
-      setStopName("");
-      setLocationName("");
-      setSelectedCategories([]);
-      setDescription("");
-      setImageUri(null);
+        // Optionally, update the local context (if useTrip manages it)
+        // This part needs careful consideration if 'useTrip' expects 'stops' as an array on tripData
+        // If 'useTrip' only manages the main trip details and not subcollections,
+        // then updating `updateTripData` with a modified `stops` array won't reflect subcollection changes.
+        // You might need to refetch the trip with its subcollections or update `useTrip` to
+        // handle subcollection data separately.
+        // For now, we'll just show success and let the main data refresh if needed.
+        updateTripData(prevData => ({
+            ...prevData,
+            stops: [...prevData.stops, stop]
+            // Note: `prevData.stops` here would not reflect the newly added subcollection stop.
+            // If `useTrip` needs to know about the new stop, you'd need to fetch it
+            // or modify `useTrip` to handle subcollection additions differently.
+        }));
 
-      Alert.alert("Success", "Stop added successfully!");
+
+        // Reset form fields
+        setStopName("");
+        setLocationName("");
+        setSelectedCategories([]);
+        setDescription("");
+        setImageUri(null);
+        setShowOnMap(false); // Reset toggle for next stop
+        
+        Alert.alert("Success", "Stop added successfully!");
+        // If you want to go back or navigate to a different screen after adding
+        // router.back();
+        // Or if you want to keep adding stops on this screen:
+        // No explicit navigation needed here.
+
     } catch (error) {
-      console.error("Error adding stop: ", error);
-      Alert.alert(
-        "Error",
-        "There was an issue adding the stop. Please try again."
-      );
+        console.error("Error adding stop: ", error);
+        Alert.alert(
+            "Error",
+            "There was an issue adding the stop. Please try again."
+        );
     } finally {
-      setIsAddingStop(false);
+        setIsAddingStop(false);
     }
-  };
+};
 
   const handleContinue = () => {
     router.push({
@@ -343,7 +394,7 @@ export default function AddStopScreen() {
   }
 
   return (
-    <ScrollView style={styles.container}>
+    <View style={styles.container}> {/* Changed to View */}
       <View style={styles.headerContainer}>
         <TouchableOpacity onPress={() => router.back()}>
           <Ionicons name="arrow-back" size={24} color="#333" />
@@ -354,10 +405,10 @@ export default function AddStopScreen() {
 
       <View style={styles.progressBarContainer}>
         <View style={[styles.progressBarFill, { width: "50%" }]} />
-        <Text style={styles.progressText}>Creating Trip 2/4</Text>
+
       </View>
 
-      <View style={styles.content}>
+      <ScrollView contentContainerStyle={styles.content}> {/* Changed to ScrollView */}
         <View style={styles.inputGroup}>
           <Text style={styles.label}>Stop Name</Text>
           <TextInput
@@ -381,7 +432,9 @@ export default function AddStopScreen() {
               style={styles.textInput}
               placeholder="Address or Location Name"
               value={locationName}
-              onChangeText={handleLocationChange} // Use new handler
+              onChangeText={handleLocationChange}
+              onFocus={() => setShowSuggestions(true)}
+              onBlur={() => setTimeout(() => setShowSuggestions(false), 200)} // Delay to allow click on suggestion
             />
             <TouchableOpacity
               onPress={getCurrentLocation}
@@ -398,74 +451,71 @@ export default function AddStopScreen() {
               )}
             </TouchableOpacity>
           </View>
-          {suggestions.length > 0 && (
-            <FlatList
-              data={suggestions}
-              keyExtractor={(item) => item.id}
-              renderItem={({ item }) => (
-                <TouchableOpacity
-                  style={styles.suggestionItem}
-                  onPress={() => handleSelectSuggestion(item)}
-                >
-                  <Text style={styles.suggestionText}>{item.description}</Text>
-                </TouchableOpacity>
-              )}
-              style={styles.suggestionsList}
-            />
+          {showSuggestions && suggestions.length > 0 && (
+            <View style={styles.suggestionsListContainer}>
+                <FlatList
+                    data={suggestions}
+                    keyExtractor={(item) => item.id}
+                    renderItem={({ item }) => (
+                        <TouchableOpacity
+                            style={styles.suggestionItem}
+                            onPress={() => handleSelectSuggestion(item)}
+                        >
+                            <Text style={styles.suggestionText}>
+                                {item.description}
+                            </Text>
+                        </TouchableOpacity>
+                    )}
+                    style={styles.suggestionsList}
+                    nestedScrollEnabled={true}
+                />
+            </View>
           )}
         </View>
-
+        
         <View style={styles.inputGroup}>
-          <Text style={styles.label}>Category</Text>
-          <View style={styles.categoryGrid}>
-            {categories.map((cat) => (
-              <TouchableOpacity
-                key={cat.name}
-                style={[
-                  styles.categoryButton,
-                  selectedCategories.includes(cat.name) &&
-                    styles.selectedCategory,
-                ]}
-                onPress={() => handleCategorySelect(cat.name)}
-              >
-                <FontAwesome5
-                  name={cat.icon}
-                  size={30}
-                  color={
-                    selectedCategories.includes(cat.name) ? "#fff" : "#333"
-                  }
-                />
-                <Text
-                  style={[
-                    styles.categoryText,
-                    selectedCategories.includes(cat.name) &&
-                      styles.selectedCategoryText,
-                  ]}
-                >
-                  {cat.name}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
+  <Text style={styles.label}>Category</Text>
+  <View style={styles.categoryGrid}>
+    {categories.map((cat) => (
+      <TouchableOpacity
+        key={cat.name}
+        style={[
+          styles.categoryButton,
+          selectedCategories.includes(cat.name) && styles.selectedCategory,
+        ]}
+        onPress={() => handleCategorySelect(cat.name)}
+      >
+        <FontAwesome5
+          name={cat.icon}
+          size={20} // Icon size
+          color={
+            selectedCategories.includes(cat.name) ? "#fff" : "#333"
+          }
+        />
+        <Text
+          style={[
+            styles.categoryLabel,
+            selectedCategories.includes(cat.name) && styles.selectedCategoryLabel,
+          ]}
+        >
+          {cat.name}
+        </Text>
+      </TouchableOpacity>
+    ))}
+  </View>
+</View>
+
+        <View style={styles.toggleContainer}>
+            <Text style={styles.toggleLabel}>Show on Map</Text>
+            <Switch
+                trackColor={{ false: "#767577", true: "#3F7D58" }} // Green track for true
+                thumbColor={showOnMap ? "#4CAF50" : "#f4f3f4"} // Brighter green thumb
+                onValueChange={setShowOnMap}
+                value={showOnMap}
+            />
         </View>
 
-        {selectedCategories.length > 0 && (
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Selected Categories</Text>
-            <FlatList
-              horizontal
-              data={selectedCategories}
-              keyExtractor={(item) => item}
-              renderItem={({ item }) => (
-                <View style={styles.selectedTag}>
-                  <Text style={styles.selectedTagText}>{item}</Text>
-                </View>
-              )}
-              showsHorizontalScrollIndicator={false}
-            />
-          </View>
-        )}
-        <View style={styles.inputGroup}>
+        <View style={styles.inputGroup}> {/* Changed from descriptionContainer */}
           <Text style={styles.label}>Description</Text>
           <TextInput
             style={styles.textArea}
@@ -486,10 +536,11 @@ export default function AddStopScreen() {
             )}
           </TouchableOpacity>
         </View>
-      </View>
+      </ScrollView>
 
+      {/* Button container fixed at the bottom */}
       <View style={styles.buttonContainer}>
-        <TouchableOpacity style={styles.addStopButton} onPress={handleAddStop}>
+        <TouchableOpacity style={styles.addStopButton} onPress={handleAddStop} disabled={isAddingStop}>
           {isAddingStop ? (
             <ActivityIndicator color="#fff" />
           ) : (
@@ -504,7 +555,7 @@ export default function AddStopScreen() {
           <Text style={styles.continueButtonText}>Continue</Text>
         </TouchableOpacity>
       </View>
-    </ScrollView>
+    </View>
   );
 }
 
@@ -519,7 +570,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    marginBottom: 10,
+    marginBottom: 5, // Reduced margin
   },
   header: {
     fontSize: 22,
@@ -530,7 +581,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#E6F0E6",
     height: 8,
     borderRadius: 4,
-    marginBottom: 15,
+    marginBottom: 10, // Reduced margin
     position: "relative",
   },
   progressBarFill: {
@@ -539,141 +590,154 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   progressText: {
-    fontSize: 14,
+    fontSize: 12, // Slightly smaller font
     color: "#666",
     textAlign: "center",
-    marginTop: 5,
+    marginTop: 3, // Reduced margin
   },
   content: {
-    flex: 1,
+    flexGrow: 1, // Allows content to grow within ScrollView, but we'll try to prevent actual scrolling
+    paddingBottom: 10, // Reduced padding
   },
   inputGroup: {
-    marginBottom: 15,
+    marginBottom: 10, // Reduced margin
   },
   label: {
-    fontSize: 16,
+    fontSize: 14, // Slightly smaller label
     fontWeight: "bold",
-    marginBottom: 8,
+    marginBottom: 5, // Reduced margin
   },
   input: {
     borderWidth: 1,
     borderColor: "#ddd",
-    borderRadius: 10,
-    padding: 15,
+    borderRadius: 8, // Slightly smaller border radius
+    padding: 12, // Reduced padding
+    fontSize: 14,
   },
   locationInputContainer: {
     flexDirection: "row",
     alignItems: "center",
     borderWidth: 1,
     borderColor: "#ddd",
-    borderRadius: 10,
-    paddingHorizontal: 15,
+    borderRadius: 8, // Slightly smaller border radius
+    paddingHorizontal: 10, // Reduced padding
     justifyContent: "space-between",
   },
   icon: {
-    marginRight: 10,
+    marginRight: 8, // Reduced margin
   },
   textInput: {
     flex: 1,
-    paddingVertical: 15,
+    paddingVertical: 12, // Reduced padding
+    fontSize: 14,
   },
   gpsButton: {
-    padding: 5,
+    padding: 3, // Reduced padding
     justifyContent: "center",
     alignItems: "center",
   },
   categoryGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
-    justifyContent: "space-between",
+    justifyContent: "space-evenly", // Evenly distribute items
+    paddingVertical: 5, // Add some vertical padding
+    marginBottom: 5,
   },
   categoryButton: {
     alignItems: "center",
     justifyContent: "center",
-    width: width / 4.5,
+    width: width / 5, // Smaller size, fits more items in one row
     aspectRatio: 1,
-    borderRadius: 10,
+    borderRadius: (width / 7) / 2, // Half of width for perfect circle
     backgroundColor: "#F0F0F0",
-    marginBottom: 10,
+    marginBottom: 5, // Reduced margin
+    elevation: 2,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 }, // Lighter shadow
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
   },
   selectedCategory: {
     backgroundColor: "#3F7D58",
   },
-  categoryText: {
-    fontSize: 12,
-    marginTop: 5,
+  categoryLabel: {
+    fontSize: 12, // Smaller font for labels
     color: "#333",
+    marginTop: 5, // Space between icon and label
+    textAlign: "center",
   },
-  selectedCategoryText: {
-    color: "#fff",
+  selectedCategoryLabel: {
+    color: "#fff", // Change label color for selected categories
   },
-  selectedTag: {
-    backgroundColor: "#E6F0E6",
-    borderRadius: 20,
-    paddingVertical: 8,
-    paddingHorizontal: 15,
-    marginRight: 10,
+  // Removed categoryText styles as icons are self-explanatory now
+  // For 'Show on Map' toggle
+  toggleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 10, // Reduced margin
+    paddingVertical: 5,
   },
-  selectedTagText: {
+  toggleLabel: {
     fontSize: 14,
-    color: "#3F7D58",
-    fontWeight: "bold",
+    fontWeight: 'bold',
   },
   textArea: {
     borderWidth: 1,
     borderColor: "#ddd",
-    borderRadius: 10,
-    padding: 15,
-    height: 100,
+    borderRadius: 8,
+    padding: 10, // Reduced padding
+    height: 60, // Reduced height for description
     textAlignVertical: "top",
+    fontSize: 14,
   },
   photoPicker: {
-    borderWidth: 2,
-    borderColor: "#ddd",
+    borderWidth: 1, // Slightly thinner border
+    borderColor: "#ccc", // Lighter border color
     borderStyle: "dashed",
-    borderRadius: 10,
-    width: 100,
-    height: 100,
+    borderRadius: 8,
+    width: 80, // Smaller photo picker
+    height: 80, // Smaller photo picker
     justifyContent: "center",
     alignItems: "center",
   },
   image: {
     width: "100%",
     height: "100%",
-    borderRadius: 10,
+    borderRadius: 8,
   },
   buttonContainer: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginTop: 30,
-    marginBottom: 10,
+    marginTop: 15, // Reduced margin
+    marginBottom: 5, // Reduced margin
   },
   addStopButton: {
     backgroundColor: "#3F7D58",
-    padding: 18,
-    borderRadius: 30,
+    padding: 14, // Reduced padding
+    borderRadius: 25, // Smaller border radius for buttons
     alignItems: "center",
     flex: 1,
-    marginRight: 10,
+    marginRight: 8, // Reduced margin
   },
   continueButton: {
     backgroundColor: "#fff",
     borderColor: "#3F7D58",
     borderWidth: 1,
-    padding: 18,
-    borderRadius: 30,
+    padding: 14, // Reduced padding
+    borderRadius: 25, // Smaller border radius
     alignItems: "center",
     flex: 1,
-    marginLeft: 10,
+    marginLeft: 8, // Reduced margin
   },
   buttonText: {
     color: "#fff",
-    fontSize: 18,
+    fontSize: 16, // Slightly smaller font
     fontWeight: "bold",
   },
   continueButtonText: {
     color: "#3F7D58",
-    fontSize: 18,
+    fontSize: 16, // Slightly smaller font
     fontWeight: "bold",
   },
   loadingContainer: {
@@ -681,21 +745,33 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-  suggestionsList: {
+  // Styles for suggestions list
+  suggestionsListContainer: {
+    position: 'absolute',
+    width: '100%',
+    top: 90, // Position it below the location input
+    zIndex: 100, // Ensure it's above other elements
+    backgroundColor: '#fff',
+    borderRadius: 8,
     borderWidth: 1,
-    borderColor: "#ddd",
-    borderRadius: 10,
-    marginTop: 5,
-    maxHeight: 200,
-    backgroundColor: "#fff",
+    borderColor: '#ddd',
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 3,
+    maxHeight: 150, // Limit height to avoid overflowing the screen
+  },
+  suggestionsList: {
+    // These styles are applied to the FlatList itself, not its container
   },
   suggestionItem: {
-    padding: 15,
+    padding: 12, // Reduced padding
     borderBottomWidth: 1,
     borderBottomColor: "#eee",
   },
   suggestionText: {
-    fontSize: 16,
+    fontSize: 14,
     color: "#333",
   },
 });

@@ -48,7 +48,7 @@ const LoginScreen = () => {
           console.log('Google login successful with Firebase:', user.uid);
           Alert.alert('Login Successful', `Welcome, ${user.displayName || user.email}!`);
           
-          axios.post('http://192.168.43.123:8081/syncGoogleUser', {
+          axios.post('http://10.56.9.156:8081/syncGoogleUser', {
           firebaseUid: user.uid,
           email: user.email,
           displayName: user.displayName,

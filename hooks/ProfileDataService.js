@@ -1,5 +1,5 @@
 import { collection, query, where, getDocs } from 'firebase/firestore';
-import { db } from '../../firebaseConfig';
+import { db } from '../firebaseConfig';
 
 export const getProfileData = async (userId) => {
     let totalKm = 0;
@@ -37,3 +37,5 @@ export const getProfileData = async (userId) => {
         lastTrip,
     };
 };
+
+export default getProfileData;

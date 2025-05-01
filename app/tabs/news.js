@@ -10,7 +10,7 @@ import {
   TouchableOpacity,
   Alert,
 } from 'react-native';
-import { format } from 'date-fns'; // For formatting the date nicely
+import { format } from 'date-fns';
 
 const NewsTab = () => {
   const [newsData, setNewsData] = useState([]);
@@ -19,20 +19,39 @@ const NewsTab = () => {
 
   useEffect(() => {
     const fetchNews = async () => {
-      try {
-        const response = await fetch('https://rss.app/feeds/v1.1/kGU7KOLzi6afFFUb.json');
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
+      const rssFeedUrl = 'https://www.bluelankatours.com/feed/';
+      const apiUrl = `https://api.rss2json.com/v1/api.json?rss_url=${rssFeedUrl}`;
+      const maxRetries = 3;
+      let attempt = 0;
+
+      while (attempt < maxRetries) {
+        try {
+          const response = await fetch(apiUrl);
+
+          if (!response.ok) {
+            // Throw an error to be caught by the catch block
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+          const data = await response.json();
+
+          setNewsData(data.items || []);
+          setError(null); // Clear any previous errors
+          break; // Exit the loop on success
+
+        } catch (e) {
+          console.error(`Attempt ${attempt + 1} failed:`, e.message);
+          attempt++;
+          if (attempt < maxRetries) {
+            // Wait fo
+            
+            await new Promise(resolve => setTimeout(resolve, 2000));
+          } else {
+            // All retries failed
+            setError(`Failed to load news after ${maxRetries} attempts. Error: ${e.message}`);
+          }
         }
-        const data = await response.json();
-        // This is correct, the news articles are in the 'items' array
-        setNewsData(data.items || []);
-      } catch (e) {
-        setError(e.message);
-        console.error("Failed to fetch news:", e);
-      } finally {
-        setLoading(false);
       }
+      setLoading(false);
     };
 
     fetchNews();
@@ -52,7 +71,7 @@ const NewsTab = () => {
     return (
       <View style={styles.centered}>
         <ActivityIndicator size="large" color="#0000ff" />
-        <Text>Loading news...</Text>
+        <Text>Loading Sri Lanka Travel News...</Text>
       </View>
     );
   }
@@ -60,42 +79,39 @@ const NewsTab = () => {
   if (error) {
     return (
       <View style={styles.centered}>
-        <Text style={styles.errorText}>Error: {error}</Text>
-        <Text>Could not load news. Please try again later.</Text>
+        <Text style={styles.errorText}>{error}</Text>
+        <Text>Please check your network connection or try again later.</Text>
       </View>
     );
   }
 
   const renderNewsItem = ({ item }) => {
-    // UPDATED: Use 'item.date_published' and format it
-    const publishedDate = new Date(item.date_published);
-    const displayDate = !isNaN(publishedDate)
-      ? format(publishedDate, 'MMMM dd, yyyy') // Example: "July 23, 2025"
+    const publishedDate = new Date(item.pubDate);
+    const displayDate = !isNaN(publishedDate.getTime())
+      ? format(publishedDate, 'MMMM dd, yyyy')
       : 'Invalid Date';
 
+    const imageUrl = item.enclosure?.link || item.thumbnail;
+
     return (
-      // UPDATED: Call handleLinkPress with 'item.url'
-      <TouchableOpacity onPress={() => handleLinkPress(item.url)} style={styles.newsItemContainer}>
-        
-        {item.image && (
-          <Image source={{ uri: item.image }} style={styles.newsImage} />
-        )}
+      <TouchableOpacity onPress={() => handleLinkPress(item.link)} style={styles.newsItemContainer}>
+        {imageUrl ? (
+          <Image source={{ uri: imageUrl }} style={styles.newsImage} />
+        ) : null}
         <Text style={styles.newsTitle}>{item.title}</Text>
         <Text style={styles.newsDate}>{displayDate}</Text>
-        
-        <Text style={styles.newsDescription}>{item.content_text}</Text>
+        <Text style={styles.newsDescription}>{item.description.replace(/<[^>]+>/g, '')}</Text>
       </TouchableOpacity>
     );
   };
 
   return (
     <View style={styles.container}>
-      <Text style={styles.header}>TRAVEL NEWS</Text>
+      <Text style={styles.header}>TRAVEL NEWS - SRI LANKA</Text>
       {newsData.length > 0 ? (
         <FlatList
           data={newsData}
-          // This is correct, 'item.id' is the unique key
-          keyExtractor={(item) => item.id}
+          keyExtractor={(item, index) => item.guid || String(index)}
           renderItem={renderNewsItem}
           contentContainerStyle={styles.listContent}
         />
@@ -107,7 +123,6 @@ const NewsTab = () => {
     </View>
   );
 };
-
 
 const styles = StyleSheet.create({
   container: {

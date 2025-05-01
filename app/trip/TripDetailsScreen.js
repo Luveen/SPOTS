@@ -9,6 +9,7 @@ import axios from 'axios';
 import Constants from 'expo-constants';
 import { collection, addDoc, serverTimestamp, GeoPoint } from "firebase/firestore";
 import { db, auth} from '../../firebaseConfig';
+ 
 
 const { width } = Dimensions.get('window');
 
@@ -47,6 +48,9 @@ export default function TripDetailsScreen() {
     const [showStartDatePicker, setShowStartDatePicker] = useState(false);
     const [showEndDatePicker, setShowEndDatePicker] = useState(false);
 
+
+    const [showOnMap, setShowOnMap] = useState(false);
+    
     const [isSaving, setIsSaving] = useState(false);
 
     useEffect(() => {

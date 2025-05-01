@@ -9,7 +9,7 @@ import { db } from '../../firebaseConfig';
 
 const { height } = Dimensions.get('window');
 
-const PostViewScreen = () => {
+const PostScreen = () => {
   const router = useRouter();
   const { post } = useLocalSearchParams();
   const [posts, setPosts] = useState([]);
@@ -136,4 +136,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default PostViewScreen;
+export default PostScreen;

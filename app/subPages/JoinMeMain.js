@@ -10,10 +10,12 @@ import {
     TextInput,
     ActivityIndicator,
     Alert,
+    Platform, // <-- Import Platform
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import TripCard from '../../components/TripCard';
 import { useNavigation } from 'expo-router';
+import DateTimePicker from '@react-native-community/datetimepicker'; // <-- Import DateTimePicker
 
 import { onAuthStateChanged } from 'firebase/auth';
 import {
@@ -28,7 +30,8 @@ import {
     serverTimestamp,
     getDocs,
     updateDoc,
-    arrayUnion
+    arrayUnion,
+    runTransaction
 } from 'firebase/firestore';
 import { auth, db } from '../../firebaseConfig';
 import { addNotification } from './../tabs/notification';
@@ -44,6 +47,10 @@ export default function JoinMeMain() {
     const [userTripsCompleted, setUserTripsCompleted] = useState(0);
     const [canCreateTrip, setCanCreateTrip] = useState(false);
 
+    // New state for date picker
+    const [showDatePicker, setShowDatePicker] = useState(false);
+    const [selectedDate, setSelectedDate] = useState(new Date());
+
     const initialTripDetails = {
         title: '',
         destination: '',
@@ -58,6 +65,8 @@ export default function JoinMeMain() {
 
     const [tripDetails, setTripDetails] = useState(initialTripDetails);
     const [availableTrips, setAvailableTrips] = useState([]);
+    const [isJoining, setIsJoining] = useState(false);
+    const [joinedTripId, setJoinedTripId] = useState(null);
 
     useEffect(() => {
         let unsubscribeAuth;
@@ -114,6 +123,23 @@ export default function JoinMeMain() {
         setTripDetails({ ...tripDetails, [name]: value });
     };
 
+    // New function to handle date picker changes
+    const handleDateChange = (event, date) => {
+        setShowDatePicker(Platform.OS === 'ios');
+        if (date) {
+            const formattedDate = date.toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            });
+            setSelectedDate(date);
+            setTripDetails(prevDetails => ({
+                ...prevDetails,
+                dates: formattedDate,
+            }));
+        }
+    };
+    
     const handleGroupSizeChange = (change) => {
         setTripDetails(prevDetails => {
             const newSize = Math.max(1, prevDetails.groupSize + change);
@@ -188,44 +214,97 @@ export default function JoinMeMain() {
             Alert.alert('Error', 'You must be logged in to join a trip.');
             return;
         }
-
+    
         try {
+            setIsJoining(true); 
             const tripRef = doc(db, 'trips', tripId);
+            
             const tripSnap = await getDoc(tripRef);
-
-            if (tripSnap.exists()) {
-                const tripData = tripSnap.data();
-                if (tripData.joinedMembers && tripData.joinedMembers.includes(user.uid)) {
-                    Alert.alert('Already Joined', 'You have already joined this trip.');
-                    return;
-                }
-
-                await updateDoc(tripRef, {
-                    joinedMembers: arrayUnion(user.uid)
-                });
-                Alert.alert('Success', 'You have successfully joined the trip!');
-
-                await addNotification({
-                    type: 'trip_join',
-                    fromUserId: user.uid,
-                    toUserId: tripData.organizerId,
-                    title: `New member joined your trip!`,
-                    message: `${userName} has joined your trip to ${tripData.title}.`,
-                    trip: {
-                        id: tripId,
-                        title: tripData.title
-                    }
-                });
-
-            } else {
+            if (!tripSnap.exists()) {
                 Alert.alert('Error', 'Trip not found.');
+                setIsJoining(false);
+                return;
             }
+            const tripData = tripSnap.data();
+            if (tripData.joinedMembers && tripData.joinedMembers.includes(user.uid)) {
+                Alert.alert('Already Joined', 'You have already joined this trip.');
+                setIsJoining(false);
+                return;
+            }
+    
+            Alert.alert(
+                "Simulated Payment",
+                "Do you want to confirm your 25% advance payment to join this trip?",
+                [
+                    {
+                        text: "Cancel",
+                        style: "cancel",
+                        onPress: () => setIsJoining(false)
+                    },
+                    {
+                        text: "Confirm & Pay",
+                        onPress: async () => {
+                            try {
+                                await runTransaction(db, async (transaction) => {
+                                    const freshTripDoc = await transaction.get(tripRef);
+                                    if (!freshTripDoc.exists) {
+                                        throw "Document does not exist!";
+                                    }
+    
+                                    const currentHeadcount = freshTripDoc.data().groupSize;
+                                    const currentJoinedMembers = freshTripDoc.data().joinedMembers || [];
+    
+                                    if (currentJoinedMembers.length >= currentHeadcount) {
+                                        Alert.alert("Trip Full", "Sorry, this trip has reached its maximum capacity.");
+                                        setIsJoining(false);
+                                        return;
+                                    }
+    
+                                    transaction.update(tripRef, {
+                                        joinedMembers: arrayUnion(user.uid),
+                                        groupSize: currentHeadcount - 1
+                                    });
+                                });
+    
+                                setJoinedTripId(tripId);
+                                setIsJoining(false);
+    
+                                Alert.alert('Success!', 'Your 25% advance payment has been confirmed. You have successfully joined the trip!');
+    
+                                // Check if organizerId exists before sending the notification
+                                if (tripData.organizerId) {
+                                    await addNotification({
+                                        type: 'trip_join',
+                                        fromUserId: user.uid,
+                                        toUserId: tripData.organizerId,
+                                        title: `New member joined your trip!`,
+                                        message: `${userName} has joined your trip to ${tripData.title}.`,
+                                        trip: {
+                                            id: tripId,
+                                            title: tripData.title
+                                        }
+                                    });
+                                } else {
+                                    console.warn('Could not send join notification: organizerId is missing for this trip.');
+                                }
+    
+                            } catch (error) {
+                                console.error('Transaction failed:', error);
+                                setIsJoining(false);
+                                Alert.alert('Error', 'Failed to join trip due to a server error. Please try again.');
+                            }
+                        }
+                    }
+                ]
+            );
+    
         } catch (error) {
             console.error('Error joining trip:', error);
+            setIsJoining(false);
             Alert.alert('Error', 'Failed to join trip. Please try again.');
         }
     };
-
+    
     const handleCancelPost = () => {
         setCreatePostVisible(false);
         setTripDetails(initialTripDetails);
@@ -254,7 +333,7 @@ export default function JoinMeMain() {
                 <View style={styles.profileSection}>
                     <View>
                         <Text style={styles.profileName}>{userName}</Text>
-                        <Text style={styles.profileSubtitle}>Trips Completed - {userTripsCompleted}</Text>
+                        <Text style={styles.profileSubtitle}>Trips Joined - {userTripsCompleted}</Text>
                     </View>
                     <Image
                         source={profilePicture ? { uri: profilePicture } : require('../../assets/blank-profile-picture.webp')}
@@ -300,12 +379,26 @@ export default function JoinMeMain() {
                             value={tripDetails.destination}
                             onChangeText={(text) => handleInputChange('destination', text)}
                         />
-                        <TextInput
-                            style={styles.input}
-                            placeholder="Dates"
-                            value={tripDetails.dates}
-                            onChangeText={(text) => handleInputChange('dates', text)}
-                        />
+                        
+                        {/* Start of Date Picker Logic */}
+                        <TouchableOpacity onPress={() => setShowDatePicker(true)} style={styles.datePickerInput}>
+                            <Text style={[styles.dateText, !tripDetails.dates && styles.placeholderText]}>
+                                {tripDetails.dates || "Select Dates"}
+                            </Text>
+                        </TouchableOpacity>
+
+                        {showDatePicker && (
+                            <DateTimePicker
+                                testID="dateTimePicker"
+                                value={selectedDate}
+                                mode="date"
+                                display="default"
+                                onChange={handleDateChange}
+                                minimumDate={new Date()}
+                            />
+                        )}
+                        {/* End of Date Picker Logic */}
+
                         <TextInput
                             style={styles.input}
                             placeholder="Estimated Budget (e.g., LKR 10,000)"
@@ -367,7 +460,7 @@ export default function JoinMeMain() {
                 )}
 
                 {!isCreatePostVisible && (
-                    <>
+                    <View>
                         <Text style={styles.sectionTitle}>Available Trips</Text>
                         {availableTrips.map((trip) => (
                             <TripCard 
@@ -380,9 +473,12 @@ export default function JoinMeMain() {
                                 budget={trip.budget}
                                 description={trip.description}
                                 onJoin={handleJoinTrip}
+                                isJoining={isJoining && joinedTripId === trip.id} 
+                                isJoined={trip.joinedMembers && trip.joinedMembers.includes(auth.currentUser?.uid)} 
+                                organizerId={trip.organizerId}
                             />
                         ))}
-                    </>
+                    </View>
                 )}
             </ScrollView>
         </SafeAreaView>
@@ -510,6 +606,21 @@ const styles = StyleSheet.create({
         marginBottom: 15,
         fontSize: 16,
         backgroundColor: '#F7F7F7',
+    },
+    datePickerInput: {
+        borderWidth: 1,
+        borderColor: '#ddd',
+        borderRadius: 8,
+        padding: 15,
+        marginBottom: 15,
+        backgroundColor: '#F7F7F7',
+    },
+    dateText: {
+        fontSize: 16,
+        color: '#000',
+    },
+    placeholderText: {
+        color: '#757575',
     },
     multilineInput: {
         minHeight: 80,

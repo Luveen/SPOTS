@@ -235,20 +235,20 @@ const PostComponent = ({ post }) => {
                     {loadingLikes ? (
                         <ActivityIndicator size="small" color="#333" />
                     ) : (
-                        <>
+                        <View>
                             <Ionicons name={isLiked ? "heart" : "heart-outline"} size={24} color={isLiked ? "#E21818" : "#333"} />
                             <Text style={styles.actionText}>{likesCount}</Text>
-                        </>
+                        </View>
                     )}
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.actionButton} onPress={handleCommentPress}>
                     {loadingComments ? (
                         <ActivityIndicator size="small" color="#333" />
                     ) : (
-                        <>
+                        <View>
                             <Ionicons name="chatbubble-outline" size={24} color="#333" />
                             <Text style={styles.actionText}>{commentsCount}</Text>
-                        </>
+                        </View>
                     )}
                 </TouchableOpacity>
                 <View style={{ flex: 1 }} />
