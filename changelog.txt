@@ -1,1 +1,2 @@
 [2025-05-01] Add review moderation flag feature
+[2025-05-02] Add forgot password functionality
