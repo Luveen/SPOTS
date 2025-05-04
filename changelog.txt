@@ -1,3 +1,4 @@
 [2025-05-01] Add review moderation flag feature
 [2025-05-02] Add forgot password functionality
 [2025-05-03] Improve overall app loading performance
+[2025-05-04] Fix GPS accuracy issues on location fetch
