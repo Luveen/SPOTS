@@ -3,3 +3,4 @@
 [2025-05-03] Improve overall app loading performance
 [2025-05-04] Fix GPS accuracy issues on location fetch
 [2025-05-05] Fix keyboard avoiding view on form screens
+[2025-05-06] Add timestamp display on each post card
