@@ -4,3 +4,4 @@
 [2025-05-04] Fix GPS accuracy issues on location fetch
 [2025-05-05] Fix keyboard avoiding view on form screens
 [2025-05-06] Add timestamp display on each post card
+[2025-05-07] Add post detail screen with full image view
