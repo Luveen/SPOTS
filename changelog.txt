@@ -6,3 +6,4 @@
 [2025-05-06] Add timestamp display on each post card
 [2025-05-07] Add post detail screen with full image view
 [2025-05-08] Display posts in home feed with infinite scroll
+[2025-05-09] Fix broken image thumbnails in feed
