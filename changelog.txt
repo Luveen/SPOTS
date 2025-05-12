@@ -9,3 +9,4 @@
 [2025-05-09] Fix broken image thumbnails in feed
 [2025-05-10] Display nearby travel spots on map view
 [2025-05-11] Fix keyboard avoiding view on form screens
+[2025-05-12] Fix profile update not saving to Firestore
