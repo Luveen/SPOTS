@@ -14,3 +14,4 @@
 [2025-05-14] Add timestamp display on each post card
 [2025-05-15] Fix GPS accuracy issues on location fetch
 [2025-05-16] Fix login screen keyboard overlap on small screens
+[2025-05-17] Fix keyboard avoiding view on form screens
