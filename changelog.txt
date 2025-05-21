@@ -18,3 +18,4 @@
 [2025-05-18] Highlight top-rated spots on home screen
 [2025-05-19] Configure Firebase project and connect app
 [2025-05-20] Add multiple image support per post
+[2025-05-21] Store reviews in Firestore with user reference
