@@ -23,3 +23,4 @@
 [2025-05-23] Add profile picture upload with Firebase Storage
 [2025-05-24] Add filter by district on map screen
 [2025-05-25] Fix rating not updating after new review
+[2025-05-26] Add caption and location tag to new posts
