@@ -25,3 +25,4 @@
 [2025-05-25] Fix rating not updating after new review
 [2025-05-26] Add caption and location tag to new posts
 [2025-05-27] Add post detail screen with full image view
+[2025-05-28] Display nearby travel spots on map view
