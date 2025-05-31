@@ -28,3 +28,4 @@
 [2025-05-28] Display nearby travel spots on map view
 [2025-05-29] Final UI polish and spacing fixes across screens
 [2025-05-30] Add post detail screen with full image view
+[2025-05-31] Highlight top-rated spots on home screen
