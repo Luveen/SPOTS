@@ -32,3 +32,4 @@
 [2025-06-01] Show reviewer profile picture in review card
 [2025-06-02] Display average rating on spot detail screen
 [2025-06-03] Fix location not updating when user moves
+[2025-06-04] Create user profile screen layout
