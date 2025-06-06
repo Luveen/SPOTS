@@ -34,3 +34,4 @@
 [2025-06-03] Fix location not updating when user moves
 [2025-06-04] Create user profile screen layout
 [2025-06-05] Fix profile image not loading on slow connections
+[2025-06-06] Implement 5-star rating component
