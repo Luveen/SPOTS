@@ -35,3 +35,4 @@
 [2025-06-04] Create user profile screen layout
 [2025-06-05] Fix profile image not loading on slow connections
 [2025-06-06] Implement 5-star rating component
+[2025-06-07] Sort reviews by most recent by default
