@@ -40,3 +40,4 @@
 [2025-06-09] Add review submission form for each spot
 [2025-06-10] Show reviewer profile picture in review card
 [2025-06-11] Add saved spots layer toggle on map
+[2025-06-12] Update map style to match app color theme
