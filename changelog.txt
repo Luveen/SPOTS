@@ -43,3 +43,4 @@
 [2025-06-12] Update map style to match app color theme
 [2025-06-13] Add bottom tab navigation with icons
 [2025-06-14] Display nearby travel spots on map view
+[2025-06-15] Add Sri Lanka district data to Firestore
