@@ -46,3 +46,4 @@
 [2025-06-15] Add Sri Lanka district data to Firestore
 [2025-06-16] Implement login flow with email and password
 [2025-06-17] Add logout button and session handling
+[2025-06-18] Refactor navigation stack for cleaner flow
