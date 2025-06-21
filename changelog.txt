@@ -49,3 +49,4 @@
 [2025-06-18] Refactor navigation stack for cleaner flow
 [2025-06-19] Add saved spots layer toggle on map
 [2025-06-20] Implement 5-star rating component
+[2025-06-21] Add Sri Lanka district data to Firestore
