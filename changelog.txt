@@ -51,3 +51,4 @@
 [2025-06-20] Implement 5-star rating component
 [2025-06-21] Add Sri Lanka district data to Firestore
 [2025-06-22] Improve image picker UI for better experience
+[2025-06-23] Fix location not updating when user moves
