@@ -52,3 +52,4 @@
 [2025-06-21] Add Sri Lanka district data to Firestore
 [2025-06-22] Improve image picker UI for better experience
 [2025-06-23] Fix location not updating when user moves
+[2025-06-24] Implement delete post functionality
