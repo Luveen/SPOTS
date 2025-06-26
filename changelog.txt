@@ -54,3 +54,4 @@
 [2025-06-23] Fix location not updating when user moves
 [2025-06-24] Implement delete post functionality
 [2025-06-25] Add review submission form for each spot
+[2025-06-26] Fix notification badge count not resetting
