@@ -58,3 +58,4 @@
 [2025-06-27] Fix profile update not saving to Firestore
 [2025-06-28] Fix GPS accuracy issues on location fetch
 [2025-06-29] Implement Firebase Storage image upload
+[2025-06-30] Display posts in home feed with infinite scroll
