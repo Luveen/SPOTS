@@ -61,3 +61,4 @@
 [2025-06-30] Display posts in home feed with infinite scroll
 [2025-07-01] Improve map performance with marker clustering
 [2025-07-02] Add logout button and session handling
+[2025-07-03] Add bottom tab navigation with icons
