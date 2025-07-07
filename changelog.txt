@@ -65,3 +65,4 @@
 [2025-07-04] Set up React Native project structure
 [2025-07-05] Add bottom tab navigation with icons
 [2025-07-06] Add splash screen with SPOTS logo
+[2025-07-07] Implement dark mode support
