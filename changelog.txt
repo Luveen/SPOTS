@@ -66,3 +66,4 @@
 [2025-07-05] Add bottom tab navigation with icons
 [2025-07-06] Add splash screen with SPOTS logo
 [2025-07-07] Implement dark mode support
+[2025-07-08] Sort reviews by most recent by default
