@@ -67,3 +67,4 @@
 [2025-07-06] Add splash screen with SPOTS logo
 [2025-07-07] Implement dark mode support
 [2025-07-08] Sort reviews by most recent by default
+[2025-07-09] Add profile picture upload with Firebase Storage
