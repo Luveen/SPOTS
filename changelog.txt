@@ -68,3 +68,4 @@
 [2025-07-07] Implement dark mode support
 [2025-07-08] Sort reviews by most recent by default
 [2025-07-09] Add profile picture upload with Firebase Storage
+[2025-07-10] Fix image compression before upload
