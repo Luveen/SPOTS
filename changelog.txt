@@ -71,3 +71,4 @@
 [2025-07-10] Fix image compression before upload
 [2025-07-11] Add search bar to find spots on map
 [2025-07-12] Configure Firebase project and connect app
+[2025-07-13] Fix notification badge count not resetting
