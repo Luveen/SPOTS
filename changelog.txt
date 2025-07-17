@@ -75,3 +75,4 @@
 [2025-07-14] Add timestamp display on each post card
 [2025-07-15] Implement delete post functionality
 [2025-07-16] Add helpful vote button on reviews
+[2025-07-17] Implement delete post functionality
