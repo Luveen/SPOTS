@@ -77,3 +77,4 @@
 [2025-07-16] Add helpful vote button on reviews
 [2025-07-17] Implement delete post functionality
 [2025-07-18] Fix image compression before upload
+[2025-07-19] Store reviews in Firestore with user reference
