@@ -80,3 +80,4 @@
 [2025-07-19] Store reviews in Firestore with user reference
 [2025-07-20] Add saved spots layer toggle on map
 [2025-07-21] Set up React Native project structure
+[2025-07-22] Add user onboarding screen after first login
