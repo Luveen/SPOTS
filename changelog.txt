@@ -81,3 +81,4 @@
 [2025-07-20] Add saved spots layer toggle on map
 [2025-07-21] Set up React Native project structure
 [2025-07-22] Add user onboarding screen after first login
+[2025-07-23] Improve map performance with marker clustering
