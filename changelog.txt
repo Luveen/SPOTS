@@ -83,3 +83,4 @@
 [2025-07-22] Add user onboarding screen after first login
 [2025-07-23] Improve map performance with marker clustering
 [2025-07-24] Add edit and delete review options
+[2025-07-25] Add user registration screen with validation
