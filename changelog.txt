@@ -85,3 +85,4 @@
 [2025-07-24] Add edit and delete review options
 [2025-07-25] Add user registration screen with validation
 [2025-07-26] Add caption and location tag to new posts
+[2025-07-27] Improve review card UI with better spacing
