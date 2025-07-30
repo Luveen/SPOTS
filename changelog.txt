@@ -88,3 +88,4 @@
 [2025-07-27] Improve review card UI with better spacing
 [2025-07-28] Fix map not loading on Android devices
 [2025-07-29] Implement dark mode support
+[2025-07-30] Implement 5-star rating component
