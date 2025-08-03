@@ -92,3 +92,4 @@
 [2025-07-31] Implement dark mode support
 [2025-08-01] Fix duplicate review submission bug
 [2025-08-02] Add logout button and session handling
+[2025-08-03] Store reviews in Firestore with user reference
