@@ -99,3 +99,4 @@
 [2025-08-07] Fix login screen keyboard overlap on small screens
 [2025-08-08] Add Google Sign-In integration
 [2025-08-09] Add review submission form for each spot
+[2025-08-10] Add bottom tab navigation with icons
