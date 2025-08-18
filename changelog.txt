@@ -107,3 +107,4 @@
 [2025-08-15] Add review moderation flag feature
 [2025-08-16] Improve review card UI with better spacing
 [2025-08-17] Add edit and delete review options
+[2025-08-18] Add user onboarding screen after first login
