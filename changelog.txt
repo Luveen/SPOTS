@@ -110,3 +110,4 @@
 [2025-08-18] Add user onboarding screen after first login
 [2025-08-19] Fix broken image thumbnails in feed
 [2025-08-20] Secure Firestore rules for user data
+[2025-08-21] Add user registration screen with validation
