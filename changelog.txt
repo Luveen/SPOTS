@@ -113,3 +113,4 @@
 [2025-08-21] Add user registration screen with validation
 [2025-08-22] Fix rating not updating after new review
 [2025-08-23] Final UI polish and spacing fixes across screens
+[2025-08-24] Create user profile screen layout
