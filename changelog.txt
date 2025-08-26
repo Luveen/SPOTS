@@ -115,3 +115,4 @@
 [2025-08-23] Final UI polish and spacing fixes across screens
 [2025-08-24] Create user profile screen layout
 [2025-08-25] Refactor navigation stack for cleaner flow
+[2025-08-26] Fix location not updating when user moves
