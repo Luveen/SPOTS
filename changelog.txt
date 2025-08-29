@@ -118,3 +118,4 @@
 [2025-08-26] Fix location not updating when user moves
 [2025-08-27] Fix image compression before upload
 [2025-08-28] Implement 5-star rating component
+[2025-08-29] Fix slow feed load with Firestore pagination
