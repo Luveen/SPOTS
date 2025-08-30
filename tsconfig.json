@@ -13,5 +13,5 @@
     "**/*.tsx",
     ".expo/types/**/*.ts",
     "expo-env.d.ts"
-  ]
+, "app/OnboardingScreen.js", "app/auth/signupdelete.txt", "app/auth/signup.tsx", "app/index.tsx", "app/tabs/profile.js", "app/subPages/JoinMeMain.js"  ]
 }

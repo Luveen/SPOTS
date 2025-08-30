@@ -4,19 +4,28 @@
     "slug": "Spots",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
+    "icon": "./assets/onboarding-image1.png",
     "scheme": "spots",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
-    "ios": {
-      "supportsTablet": true
-    },
+
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/adaptive-icon.png",
+        "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true
+      "edgeToEdgeEnabled": true,
+      "package": "com.luveen.spots",
+      "googleServicesFile": "google-services.json",
+      "permissions": [
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION"
+      ],
+      "config": {
+        "googleMaps": {
+          "apiKey": "AIzaSyB8PNvLpjKD6cKLCFWAGyTd8D7jhE0O51o"
+        }
+      }
     },
     "web": {
       "bundler": "metro",
@@ -28,15 +37,37 @@
       [
         "expo-splash-screen",
         {
-          "image": "./assets/images/splash-icon.png",
+          "image": "./assets/logoimage1.jpg",
           "imageWidth": 200,
           "resizeMode": "contain",
           "backgroundColor": "#ffffff"
         }
-      ]
+      ],
+      "expo-web-browser",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "useFrameworks": "static"
+          },
+          "ios": {
+            "useFrameworks": "static"
+          }
+        }
+      ],
+      "@react-native-firebase/auth",
+      "@react-native-firebase/app",
+      "expo-font"
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "64658363-a856-407e-a24f-2af84eee2cb8"
+      },
+      "googleMapsApiKey": "AIzaSyB8PNvLpjKD6cKLCFWAGyTd8D7jhE0O51o"
     }
   }
 }

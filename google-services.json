@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "8469245735",
+    "project_id": "spots-5ced8",
+    "storage_bucket": "spots-5ced8.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:8469245735:android:8d74b754e91b86386f8302",
+        "android_client_info": {
+          "package_name": "com.luveen.spots"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "8469245735-3uvh5sbkgtamvl4s08565c06ik793bi2.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.luveen.spots",
+            "certificate_hash": "2a700934c9cca3ea1aebbb402a68cae072393472"
+          }
+        },
+        {
+          "client_id": "8469245735-bc96d231rd3ul6qko1u06orfkc7128om.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyARuJRevaVyG-OGfuskayANt4IoWQrGdjg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "8469245735-bc96d231rd3ul6qko1u06orfkc7128om.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
