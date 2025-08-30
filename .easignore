@@ -1,0 +1,17 @@
+# Ignore common development and dependency directories
+node_modules/
+.expo/
+.git/
+
+# Ignore platform-specific build directories
+# EAS Build will generate these from scratch on the cloud.
+android/
+ios/
+
+# Ignore local environment and build-specific files
+.env
+.env.local
+eas-build-config.json
+
+# Ignore editor-specific files
+.vscode/

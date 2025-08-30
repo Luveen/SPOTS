@@ -3,11 +3,11 @@ import { useState } from 'react';
 export const useTrip = () => {
     const [tripData, setTripData] = useState({
         tripTitle: '',
-        startLocation: { name: '', geo: null }, // Updated: Initialize with an object to prevent null access
-        endLocation: { name: '', geo: null },   // Updated: Initialize endLocation as well
+        startLocation: { name: '', geo: null },
+        endLocation: { name: '', geo: null },
         modeOfTransport: '',
-        startDate: null, // Updated: Initialize as null
-        endDate: null,   // Updated: Initialize as null
+        startDate: null,
+        endDate: null,
         stops: [],
         totalKm: 0,
     });

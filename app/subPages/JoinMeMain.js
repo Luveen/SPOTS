@@ -1,5 +1,3 @@
-
-
 import React, { useEffect, useState } from 'react';
 import {
     StyleSheet,
@@ -18,18 +16,19 @@ import TripCard from '../../components/TripCard';
 import { useNavigation } from 'expo-router';
 
 import { onAuthStateChanged } from 'firebase/auth';
-import { 
-    doc, 
-    getDoc, 
-    Timestamp, 
-    query, 
-    collection, 
-    orderBy, 
-    onSnapshot, 
-    addDoc, 
+import {
+    doc,
+    getDoc,
+    Timestamp,
+    query,
+    collection,
+    orderBy,
+    onSnapshot,
+    addDoc,
     serverTimestamp,
     getDocs,
-    where
+    updateDoc,
+    arrayUnion
 } from 'firebase/firestore';
 import { auth, db } from '../../firebaseConfig';
 import { addNotification } from './../tabs/notification';
@@ -157,16 +156,15 @@ export default function JoinMeMain() {
             const followersRef = collection(db, 'newusers', user.uid, 'followers');
             const followersSnapshot = await getDocs(followersRef);
 
-            // Loop through each follower and send a notification
             followersSnapshot.forEach(async (followerDoc) => {
                 const followerId = followerDoc.id;
 
-                // Pass the necessary data to addNotification
                 await addNotification({
                     type: 'join_me_trip',
                     fromUserId: user.uid,
                     toUserId: followerId,
-                    // The trip object must be passed with an 'id' property
+                    title: `New trip from ${userName}`,
+                    message: `${userName} has created a new trip to ${newTrip.title}. Check it out!`,
                     trip: {
                         id: tripId,
                         title: newTrip.title
@@ -181,6 +179,50 @@ export default function JoinMeMain() {
         } catch (error) {
             console.error('Error posting trip: ', error);
             Alert.alert('Error', 'Failed to post trip. Please try again.');
+        }
+    };
+
+    const handleJoinTrip = async (tripId) => {
+        const user = auth.currentUser;
+        if (!user) {
+            Alert.alert('Error', 'You must be logged in to join a trip.');
+            return;
+        }
+
+        try {
+            const tripRef = doc(db, 'trips', tripId);
+            const tripSnap = await getDoc(tripRef);
+
+            if (tripSnap.exists()) {
+                const tripData = tripSnap.data();
+                if (tripData.joinedMembers && tripData.joinedMembers.includes(user.uid)) {
+                    Alert.alert('Already Joined', 'You have already joined this trip.');
+                    return;
+                }
+
+                await updateDoc(tripRef, {
+                    joinedMembers: arrayUnion(user.uid)
+                });
+                Alert.alert('Success', 'You have successfully joined the trip!');
+
+                await addNotification({
+                    type: 'trip_join',
+                    fromUserId: user.uid,
+                    toUserId: tripData.organizerId,
+                    title: `New member joined your trip!`,
+                    message: `${userName} has joined your trip to ${tripData.title}.`,
+                    trip: {
+                        id: tripId,
+                        title: tripData.title
+                    }
+                });
+
+            } else {
+                Alert.alert('Error', 'Trip not found.');
+            }
+        } catch (error) {
+            console.error('Error joining trip:', error);
+            Alert.alert('Error', 'Failed to join trip. Please try again.');
         }
     };
 
@@ -327,8 +369,18 @@ export default function JoinMeMain() {
                 {!isCreatePostVisible && (
                     <>
                         <Text style={styles.sectionTitle}>Available Trips</Text>
-                        {availableTrips.map((trip, index) => (
-                            <TripCard key={index} {...trip} />
+                        {availableTrips.map((trip) => (
+                            <TripCard 
+                                key={trip.id} 
+                                id={trip.id}
+                                title={trip.title}
+                                organizer={trip.organizer}
+                                location={trip.location}
+                                date={trip.date}
+                                budget={trip.budget}
+                                description={trip.description}
+                                onJoin={handleJoinTrip}
+                            />
                         ))}
                     </>
                 )}

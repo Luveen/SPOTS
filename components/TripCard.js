@@ -1,9 +1,9 @@
 // TripCard.js
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { Ionicons } from '@expo/vector-icons'; // Changed from Feather to Ionicons
+import { Ionicons } from '@expo/vector-icons';
 
-const TripCard = ({ title, organizer, location, date, budget, description }) => {
+const TripCard = ({ id, title, organizer, location, date, budget, description, onJoin }) => {
   return (
     <View style={styles.cardContainer}>
       <Text style={styles.title}>{title}</Text>
@@ -11,17 +11,14 @@ const TripCard = ({ title, organizer, location, date, budget, description }) => 
       
       <View style={styles.detailsContainer}>
         <View style={styles.detailItem}>
-          {/* Changed Icon */}
           <Ionicons name="location-outline" size={18} color="#3F7D58" />
           <Text style={styles.detailText}>{location}</Text>
         </View>
         <View style={styles.detailItem}>
-          {/* Changed Icon */}
           <Ionicons name="calendar-outline" size={18} color="#3F7D58" />
           <Text style={styles.detailText}>{date}</Text>
         </View>
         <View style={styles.detailItem}>
-          {/* Changed Icon */}
           <Ionicons name="cash-outline" size={18} color="#3F7D58" />
           <Text style={styles.detailText}>Budget: {budget}</Text>
         </View>
@@ -29,7 +26,7 @@ const TripCard = ({ title, organizer, location, date, budget, description }) => 
 
       <Text style={styles.description}>{description}</Text>
 
-      <TouchableOpacity style={styles.joinButton}>
+      <TouchableOpacity style={styles.joinButton} onPress={() => onJoin(id)}>
         <Text style={styles.joinButtonText}>Join Trip</Text>
       </TouchableOpacity>
     </View>
@@ -92,6 +89,5 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
 });
-
 
 export default TripCard;

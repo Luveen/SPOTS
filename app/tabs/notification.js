@@ -12,65 +12,39 @@ import { auth, db } from '../../firebaseConfig';
 
 // Export the function so it can be used in other files (like main.js)
 // Updated to accept individual parameters
-export const addNotification = async (recipientId, senderId, type, postId) => {
-      if (!recipientId || !senderId || !type) {
-        console.error("Missing required fields for notification.");
-        return;
-      }
-    
-      try {
-        // Fetch the sender's username and profile picture
-        const senderRef = doc(db, 'newusers', senderId);
-        const senderSnap = await getDoc(senderRef);
-        
-        if (!senderSnap.exists()) {
-          console.error("From user not found for notification.");
-          return;
-        }
-    
-        const senderData = senderSnap.data();
-    
-        // Create the notification message
-        let message = '';
-        switch (type) {
-          case 'like':
-            message = `${senderData.username || 'A user'} liked your post.`;
-            break;
-          case 'comment':
-            message = `${senderData.username || 'A user'} commented on your post.`;
-            break;
-          case 'follow':
-            message = `${senderData.username || 'A user'} started following you.`;
-            break;
-          // Add more cases for other notification types as needed
-          default:
-            message = `${senderData.username || 'A user'} sent you a notification.`;
-        }
-        
-        // Reference to the recipient's notifications sub-collection
-        const notificationsRef = collection(db, 'newusers', recipientId, 'notifications');
-        
-        await addDoc(notificationsRef, {
-          from: senderId,
-          message: message,
-          type: type,
-          isRead: false,
-          timestamp: serverTimestamp(),
-          relatedPostId: postId || null,
-        });
-    
-      } catch (error) {
-        console.error("Error adding notification:", error);
-      }
-};
-
-const getFromUser = async (userId) => {
-    const userRef = doc(db, 'newusers', userId);
-    const userSnap = await getDoc(userRef);
-    if (userSnap.exists()) {
-        return userSnap.data();
+export const addNotification = async (recipientId, senderId, type, postId, commentText = null) => {
+    if (!recipientId || !senderId || !type) {
+        console.error("Missing required fields for notification.");
+        return;
     }
-    return null;
+    
+    try {
+        const senderRef = doc(db, 'newusers', senderId);
+        const senderSnap = await getDoc(senderRef);
+        
+        if (!senderSnap.exists()) {
+            console.error("From user not found for notification.");
+            return;
+        }
+    
+        const senderData = senderSnap.data();
+        
+        const notificationsRef = collection(db, 'newusers', recipientId, 'notifications');
+        
+        await addDoc(notificationsRef, {
+            from: senderId,
+            // The message is constructed here for the notification list
+            message: `${senderData.username || 'A user'} commented on your post: "${commentText}"`, 
+            type: type,
+            isRead: false,
+            timestamp: serverTimestamp(),
+            relatedPostId: postId || null,
+            commentText: commentText, // We now save the comment text in the notification
+        });
+    
+    } catch (error) {
+        console.error("Error adding notification:", error);
+    }
 };
 
 const NotificationItem = ({ notification, onPress }) => {
@@ -133,6 +107,18 @@ const NotificationItem = ({ notification, onPress }) => {
     );
 };
 
+// This helper function is needed for the main component
+const getFromUser = async (userId) => {
+    if (!userId) return null;
+    const userRef = doc(db, 'newusers', userId);
+    const userSnap = await getDoc(userRef);
+    if (userSnap.exists()) {
+        return { id: userSnap.id, ...userSnap.data() };
+    }
+    return null;
+};
+
+
 const NotificationsPage = () => {
     const [notifications, setNotifications] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -148,13 +134,45 @@ const NotificationsPage = () => {
         const notificationsRef = collection(db, 'newusers', currentUserId, 'notifications');
         const q = query(notificationsRef, orderBy('timestamp', 'desc'));
 
-        const unsubscribe = onSnapshot(q, (querySnapshot) => {
+        const unsubscribe = onSnapshot(q, async (querySnapshot) => {
             const notificationsData = querySnapshot.docs.map(doc => ({
                 id: doc.id,
                 ...doc.data()
             }));
-            setNotifications(notificationsData);
-            setLoading(false);
+
+            // If there are no notifications, set the state and stop loading
+            if (notificationsData.length === 0) {
+                setNotifications([]);
+                setLoading(false);
+                return;
+            }
+
+            // Fetch user data for all notifications concurrently
+            const userPromises = notificationsData.map(notification => getFromUser(notification.from));
+
+            try {
+                const usersData = await Promise.all(userPromises);
+                
+                // Map the fetched user data back into the notifications
+                const notificationsWithUserData = notificationsData.map((notification, index) => {
+                    const fromUserData = usersData[index];
+                    return {
+                        ...notification,
+                        fromUser: fromUserData,
+                    };
+                });
+                
+                setNotifications(notificationsWithUserData);
+
+            } catch (error) {
+                console.error("Error fetching user data for notifications:", error);
+                // In case of an error, still show the notifications we have
+                // and set loading to false to unblock the UI
+                setNotifications(notificationsData);
+            } finally {
+                setLoading(false); // Make sure loading is always set to false
+            }
+
         }, (error) => {
             console.error("Error fetching notifications: ", error);
             setLoading(false);
@@ -179,8 +197,8 @@ const NotificationsPage = () => {
                 break;
             case 'like':
             case 'comment':
-                if (notification.postId) {
-                    router.push({ pathname: '/subPages/PostDetailScreen', params: { postId: notification.postId } });
+                if (notification.relatedPostId) {
+                    router.push({ pathname: '/subPages/PostDetailScreen', params: { postId: notification.relatedPostId } });
                 }
                 break;
             case 'join_me_trip':
