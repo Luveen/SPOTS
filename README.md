@@ -202,7 +202,7 @@ This project is licensed under the MIT License. See the [LICENSE](LICENSE) file 
 
 <div align="center">
 
-Made with ❤️ for Sri Lanka 🇱🇰
+Made with ❤️ for Sri Lanka
 
 *If you found this project useful, please consider giving it a ⭐ on GitHub!*
 
